@@ -7,36 +7,76 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private int lifePlayer = 3;
     [SerializeField] private string namePlayer = "Mr. Blue";
     [SerializeField] private float cameraAxisX = -90f;
-    [SerializeField] private float speedPlayer = 1f;
+    [SerializeField] private float speedPlayer = 3f;
     [SerializeField] private Vector3 swordPosition = new Vector3(0, 0, 0.3f);
     [SerializeField] private GameObject swordPlayer;
+    [SerializeField] private Animator animPlayer;
+
+
+    [SerializeField] private AudioClip punchSound;
+    [SerializeField] private AudioClip walkSound;
+
+    private AudioSource audioPlayer;
+
     // Start is called before the first frame update
     void Start()
     {
         swordPlayer.GetComponent<SwordController>().SetSwordName("Espadon 9000");
         swordPlayer.transform.position = transform.position + swordPosition;
         swordPlayer.transform.localScale = transform.localScale;
+        animPlayer.SetBool("isRun", false);
+        audioPlayer = GetComponent<AudioSource>();
     }
     void Update()
     {
-      Move();
-      RotatePlayer();
+        RotatePlayer();
+        Move();
+
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            audioPlayer.PlayOneShot(punchSound, 1f);
+            animPlayer.SetBool("isPunch", true);
+        }
+
+        if (Input.GetKeyUp(KeyCode.Space))
+        {
+            animPlayer.SetBool("isPunch", false);
+        }
+
+
     }
     private void Move()
     {
-        float ejeHorizontal = Input.GetAxisRaw("Horizontal");
-        float ejeVertical = Input.GetAxisRaw("Vertical");
-        transform.Translate(speedPlayer * Time.deltaTime * new Vector3(ejeHorizontal, 0, ejeVertical));
+        float ejeHorizontal = Input.GetAxis("Horizontal");
+        float ejeVertical   = Input.GetAxis("Vertical");
+
+        if (ejeHorizontal != 0 || ejeVertical != 0) {
+            animPlayer.SetBool("isRun", true);
+            Vector3 direction = new Vector3(ejeHorizontal, 0, ejeVertical);
+            transform.Translate(speedPlayer * Time.deltaTime * direction);
+            
+            if (!audioPlayer.isPlaying)
+            {
+                audioPlayer.PlayOneShot(walkSound, 0.5f);
+                //audioPlayer.Play();
+            }
+            
+            //audioPlayer.PlayOneShot(walkSound, 0.5f);
+        }
+        else
+        {
+            animPlayer.SetBool("isRun", false);
+            //audioPlayer.Stop();
+        }
     }
     private void RotatePlayer()
     {
         cameraAxisX += Input.GetAxis("Mouse X");
         Quaternion angulo   = Quaternion.Euler(0, cameraAxisX, 0);
-        transform.localRotation = angulo;
+        transform.rotation = angulo;
     }
     private void OnCollisionEnter(Collision collision)
     {
-        Debug.Log(collision.gameObject.name);
         if (collision.gameObject.CompareTag("Enemy"))
         {
             Destroy(collision.gameObject);
@@ -46,7 +86,6 @@ public class PlayerController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log(other.gameObject.name);
         if (other.gameObject.CompareTag("Generator"))
         {
             Destroy(other.gameObject);
